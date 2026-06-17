@@ -109,3 +109,50 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ── Buttons ── */
+.btn-save,
+.btn-reset {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 7px 18px;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.btn-save {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.btn-save:hover:not(:disabled) {
+  box-shadow: var(--shadow);
+  opacity: 0.88;
+}
+
+.btn-save:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.btn-save:focus-visible,
+.btn-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-reset {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-reset:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
