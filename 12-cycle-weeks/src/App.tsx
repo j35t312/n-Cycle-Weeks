@@ -91,19 +91,15 @@ function App() {
   })
 
   return (
-    <div style={{ padding: '32px' }}>
+    <div style={{ padding: '32px', textAlign: 'left' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <h1 style={{ margin: '0 0 20px' }}>Shift Swap Calendar</h1>
-          <div>
-            <p style={{ color: 'var(--text)', margin: 0 }}>
-              Cycle starting {cycleStartLabel}
-              {' · '}{twelveCycleConfig.cycleLength} weeks
-            </p>
-
-          </div>
+          <p style={{ color: 'var(--text)', margin: 0 }}>
+            Cycle starting {cycleStartLabel}
+            {' · '}{twelveCycleConfig.cycleLength} weeks
+          </p>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '8px' }}>
           {hasUnsavedChanges && (
             <span style={{ fontSize: '13px', color: 'var(--text)', opacity: 0.6 }}>
