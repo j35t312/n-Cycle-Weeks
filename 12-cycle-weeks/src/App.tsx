@@ -13,7 +13,6 @@ function loadFromStorage(): SwapCalendarCycle | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    // Basic shape validation
     if (
       Array.isArray(parsed) &&
       parsed.length === twelveCycleConfig.cycleLength &&
@@ -39,6 +38,7 @@ function App() {
     () => loadFromStorage() ?? createSwapCalendarCycle()
   )
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
+  const [resetPending, setResetPending] = useState(false)
 
   const hasUnsavedChanges = JSON.stringify(cycle) !== JSON.stringify(savedCycle)
 
@@ -48,6 +48,13 @@ function App() {
       return () => clearTimeout(t)
     }
   }, [saveStatus])
+
+  // Cancel pending reset if user clicks elsewhere
+  useEffect(() => {
+    if (!resetPending) return
+    const t = setTimeout(() => setResetPending(false), 3000)
+    return () => clearTimeout(t)
+  }, [resetPending])
 
   function handleCellClick(weekIndex: number, dayIndex: number) {
     setCycle(prev =>
@@ -65,12 +72,18 @@ function App() {
     setSaveStatus('saved')
   }
 
-  function handleReset() {
+  function handleResetClick() {
+    if (!resetPending) {
+      setResetPending(true)
+      return
+    }
+    // Second click — confirmed
     const fresh = createSwapCalendarCycle()
     setCycle(fresh)
     saveToStorage(fresh)
     setSavedCycle(fresh)
     setSaveStatus('idle')
+    setResetPending(false)
   }
 
   const cycleStartLabel = new Date(twelveCycleConfig.cycleStart).toLocaleDateString('en-CA', {
@@ -82,13 +95,15 @@ function App() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <h1 style={{ margin: '0 0 20px' }}>Shift Swap Calendar</h1>
-          <div style={{display:'flex'}}>
+          <div>
             <p style={{ color: 'var(--text)', margin: 0 }}>
               Cycle starting {cycleStartLabel}
               {' · '}{twelveCycleConfig.cycleLength} weeks
             </p>
+
           </div>
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '8px' }}>
           {hasUnsavedChanges && (
             <span style={{ fontSize: '13px', color: 'var(--text)', opacity: 0.6 }}>
@@ -103,8 +118,11 @@ function App() {
               Saved
             </span>
           )}
-          <button className="btn-reset" onClick={handleReset}>
-            Reset
+          <button
+            className={`btn-reset${resetPending ? ' btn-reset--confirm' : ''}`}
+            onClick={handleResetClick}
+          >
+            {resetPending ? 'Confirm reset?' : 'Reset'}
           </button>
           <button className="btn-save" onClick={handleSave} disabled={!hasUnsavedChanges}>
             Save

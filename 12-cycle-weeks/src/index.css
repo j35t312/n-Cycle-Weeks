@@ -156,3 +156,14 @@ code {
   border-color: var(--accent-border);
   color: var(--text-h);
 }
+
+.btn-reset--confirm {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-reset--confirm:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: #ef4444;
+  color: #ef4444;
+}
