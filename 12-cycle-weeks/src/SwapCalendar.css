@@ -75,6 +75,12 @@
   -webkit-appearance: none;
 }
 
+.swap-calendar__cell--empty {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
 .swap-calendar__cell--weekend {
   background: color-mix(in srgb, var(--code-bg) 60%, var(--bg) 40%);
   opacity: 0.65;

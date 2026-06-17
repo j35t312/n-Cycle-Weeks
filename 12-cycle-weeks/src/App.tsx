@@ -1,46 +1,49 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { twelveCycleConfig } from './config'
-import { createSwapCalendarCycle } from './utils'
+import {
+  buildCalendarWeeks,
+  formatCalendarDateLong,
+  getCycleStartDate,
+  getSwappableRange,
+  pruneSelections,
+  type SwapSelectionMap,
+} from './utils'
 import SwapCalendar from './SwapCalendar'
 
-type Week = boolean[]
-type SwapCalendarCycle = Week[]
+const STORAGE_KEY = `swap-calendar-v2-${twelveCycleConfig.cycleStart}`
 
-const STORAGE_KEY = `swap-calendar-${twelveCycleConfig.cycleStart}`
-
-function loadFromStorage(): SwapCalendarCycle | null {
+function loadFromStorage(): SwapSelectionMap {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
+    if (!raw) return {}
     const parsed = JSON.parse(raw)
-    if (
-      Array.isArray(parsed) &&
-      parsed.length === twelveCycleConfig.cycleLength &&
-      parsed.every((w: unknown) => Array.isArray(w) && (w as unknown[]).every(d => typeof d === 'boolean'))
-    ) {
-      return parsed as SwapCalendarCycle
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return pruneSelections(parsed as SwapSelectionMap)
     }
-    return null
+    return {}
   } catch {
-    return null
+    return {}
   }
 }
 
-function saveToStorage(cycle: SwapCalendarCycle) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cycle))
+function saveToStorage(selections: SwapSelectionMap) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(selections))
 }
 
 function App() {
-  const [cycle, setCycle] = useState<SwapCalendarCycle>(
-    () => loadFromStorage() ?? createSwapCalendarCycle()
-  )
-  const [savedCycle, setSavedCycle] = useState<SwapCalendarCycle>(
-    () => loadFromStorage() ?? createSwapCalendarCycle()
-  )
+  const [selections, setSelections] = useState<SwapSelectionMap>(() => loadFromStorage())
+  const [savedSelections, setSavedSelections] = useState<SwapSelectionMap>(() => loadFromStorage())
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
   const [resetPending, setResetPending] = useState(false)
 
-  const hasUnsavedChanges = JSON.stringify(cycle) !== JSON.stringify(savedCycle)
+  const calendarWeeks = useMemo(
+    () => buildCalendarWeeks(selections, twelveCycleConfig),
+    [selections]
+  )
+
+  const { start: swappableStart, end: swappableEnd } = getSwappableRange(twelveCycleConfig)
+
+  const hasUnsavedChanges = JSON.stringify(selections) !== JSON.stringify(savedSelections)
 
   useEffect(() => {
     if (saveStatus === 'saved') {
@@ -49,26 +52,29 @@ function App() {
     }
   }, [saveStatus])
 
-  // Cancel pending reset if user clicks elsewhere
   useEffect(() => {
     if (!resetPending) return
     const t = setTimeout(() => setResetPending(false), 3000)
     return () => clearTimeout(t)
   }, [resetPending])
 
-  function handleCellClick(weekIndex: number, dayIndex: number) {
-    setCycle(prev =>
-      prev.map((week, wi) =>
-        wi === weekIndex
-          ? week.map((day, di) => (di === dayIndex ? !day : day))
-          : week
-      )
-    )
+  function handleCellClick(dateKey: string) {
+    setSelections((prev) => {
+      const next = { ...prev }
+      if (next[dateKey]) {
+        delete next[dateKey]
+      } else {
+        next[dateKey] = true
+      }
+      return next
+    })
   }
 
   function handleSave() {
-    saveToStorage(cycle)
-    setSavedCycle(cycle)
+    const pruned = pruneSelections(selections)
+    saveToStorage(pruned)
+    setSelections(pruned)
+    setSavedSelections(pruned)
     setSaveStatus('saved')
   }
 
@@ -77,27 +83,27 @@ function App() {
       setResetPending(true)
       return
     }
-    // Second click — confirmed
-    const fresh = createSwapCalendarCycle()
-    setCycle(fresh)
+    const fresh: SwapSelectionMap = {}
+    setSelections(fresh)
     saveToStorage(fresh)
-    setSavedCycle(fresh)
+    setSavedSelections(fresh)
     setSaveStatus('idle')
     setResetPending(false)
   }
 
-  const cycleStartLabel = new Date(twelveCycleConfig.cycleStart).toLocaleDateString('en-CA', {
-    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC'
-  })
+  const cycleStartLabel = formatCalendarDateLong(getCycleStartDate(twelveCycleConfig))
 
   return (
     <div style={{ padding: '32px', textAlign: 'left' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <h1 style={{ margin: '0 0 20px' }}>Shift Swap Calendar</h1>
+          <h1 style={{ margin: '0 0 8px' }}>Shift Swap Calendar</h1>
           <p style={{ color: 'var(--text)', margin: 0 }}>
             Cycle starting {cycleStartLabel}
             {' · '}{twelveCycleConfig.cycleLength} weeks
+          </p>
+          <p style={{ color: 'var(--text)', margin: '4px 0 0', opacity: 0.75 }}>
+            Swappable {formatCalendarDateLong(swappableStart)} through {formatCalendarDateLong(swappableEnd)}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '8px' }}>
@@ -126,11 +132,7 @@ function App() {
         </div>
       </div>
 
-      <SwapCalendar
-        cycle={cycle}
-        cycleStart={twelveCycleConfig.cycleStart}
-        onCellClick={handleCellClick}
-      />
+      <SwapCalendar weeks={calendarWeeks} onCellClick={handleCellClick} />
     </div>
   )
 }

@@ -1,14 +1,11 @@
-import type { FC } from 'react'
+import { Fragment, type FC } from 'react'
+import type { CalendarWeek } from './utils'
+import { formatCalendarDate } from './utils'
 import './SwapCalendar.css'
 
-type Week = boolean[]
-type SwapCalendarCycle = Week[]
-
 interface SwapCalendarProps {
-  cycle: SwapCalendarCycle
-  /** ISO date string — day 0, week 0 of the cycle. Pass twelveCycleConfig.cycleStart directly. */
-  cycleStart: string
-  onCellClick?: (weekIndex: number, dayIndex: number, current: boolean) => void
+  weeks: CalendarWeek[]
+  onCellClick?: (dateKey: string, current: boolean) => void
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -40,26 +37,10 @@ function SwapIcon() {
   )
 }
 
-/**
- * cycleStart is day 0 of week 0 of the cycle.
- * Cell (weekIndex, dayIndex) = cycleStart + (weekIndex * 7 + dayIndex) days.
- * Uses UTC milliseconds to avoid DST shifts.
- */
-function getDateForCell(cycleStart: string, weekIndex: number, dayIndex: number): Date {
-  const startMs = Date.parse(cycleStart)
-  const offsetDays = weekIndex * 7 + dayIndex
-  return new Date(startMs + offsetDays * 86_400_000)
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-}
-
-const SwapCalendar: FC<SwapCalendarProps> = ({ cycle, cycleStart, onCellClick }) => {
+const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick }) => {
   return (
     <div className="swap-calendar">
       <div className="swap-calendar__grid">
-        {/* Header row */}
         <div className="swap-calendar__corner" />
         {DAY_LABELS.map((label) => (
           <div key={label} className="swap-calendar__day-header">
@@ -67,50 +48,44 @@ const SwapCalendar: FC<SwapCalendarProps> = ({ cycle, cycleStart, onCellClick })
           </div>
         ))}
 
-        {/* Week rows */}
-        {cycle.map((week, weekIndex) => {
-          const weekStartDate = getDateForCell(cycleStart, weekIndex, 0)
+        {weeks.map((week, weekIndex) => (
+          <Fragment key={week.weekStartDate.toISOString()}>
+            <div className="swap-calendar__week-label">
+              <span className="swap-calendar__week-number">W{week.cycleWeekNumber}</span>
+              <span className="swap-calendar__week-date">
+                {formatCalendarDate(week.weekStartDate)}
+              </span>
+            </div>
+            {week.days.map((cell, dayIndex) => {
+              if (!cell) {
+                return <div key={`empty-${weekIndex}-${dayIndex}`} className="swap-calendar__cell swap-calendar__cell--empty" />
+              }
 
-          return (
-            <>
-              <div key={`week-label-${weekIndex}`} className="swap-calendar__week-label">
-                <span className="swap-calendar__week-number">W{weekIndex + 1}</span>
-                <span className="swap-calendar__week-date">
-                  {formatDate(weekStartDate)}
-                </span>
-              </div>
-              {week.map((wantsSwap, dayIndex) => {
-                const date = getDateForCell(cycleStart, weekIndex, dayIndex)
-                const isWeekend = dayIndex >= 5
+              const { dateKey, date, wantsSwap } = cell
+              const isWeekend = dayIndex >= 5
 
-                return (
-                  <button
-                    key={`cell-${weekIndex}-${dayIndex}`}
-                    className={[
-                      'swap-calendar__cell',
-                      wantsSwap ? 'swap-calendar__cell--active' : '',
-                      isWeekend ? 'swap-calendar__cell--weekend' : '',
-                      onCellClick ? 'swap-calendar__cell--clickable' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={
-                      onCellClick
-                        ? () => onCellClick(weekIndex, dayIndex, wantsSwap)
-                        : undefined
-                    }
-                    title={`${formatDate(date)} — ${wantsSwap ? 'Wants swap' : 'No swap'}`}
-                    aria-pressed={onCellClick ? wantsSwap : undefined}
-                    aria-label={`${DAY_LABELS[dayIndex]} of week ${weekIndex + 1}, ${formatDate(date)}, ${wantsSwap ? 'wants swap' : 'no swap'}`}
-                    disabled={!onCellClick}
-                  >
-                    {wantsSwap ? <SwapIcon /> : null}
-                  </button>
-                )
-              })}
-            </>
-          )
-        })}
+              return (
+                <button
+                  key={dateKey}
+                  className={[
+                    'swap-calendar__cell',
+                    wantsSwap ? 'swap-calendar__cell--active' : '',
+                    isWeekend ? 'swap-calendar__cell--weekend' : '',
+                    'swap-calendar__cell--clickable',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => onCellClick?.(dateKey, wantsSwap)}
+                  title={`${formatCalendarDate(date)} — ${wantsSwap ? 'Wants swap' : 'No swap'}`}
+                  aria-pressed={wantsSwap}
+                  aria-label={`${DAY_LABELS[dayIndex]}, cycle week ${week.cycleWeekNumber}, ${formatCalendarDate(date)}, ${wantsSwap ? 'wants swap' : 'no swap'}`}
+                >
+                  {wantsSwap ? <SwapIcon /> : null}
+                </button>
+              )
+            })}
+          </Fragment>
+        ))}
       </div>
     </div>
   )
