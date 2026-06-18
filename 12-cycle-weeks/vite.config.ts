@@ -2,10 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const base = '/12CycleWeeks/'
+const base = '/'
 
 // https://vite.dev/config/
-// Project site: https://j35t312.github.io/12CycleWeeks/
+// Custom domain: https://www.j35t312.ca/
 export default defineConfig({
   base,
   plugins: [
@@ -54,8 +54,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: `${base}index.html`,
-        navigateFallbackDenylist: [/^\/12CycleWeeks\/api/],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
       },
       devOptions: {
         enabled: true,
