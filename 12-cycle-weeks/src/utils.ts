@@ -42,10 +42,19 @@ export function getFirstSwappableDay(reference = new Date()): Date {
 }
 
 export function getCycleStartDate(config: CycleConfig): Date {
-  const parsed = new Date(config.cycleStart)
+  return parseConfigLocalDate(config.cycleStart)
+}
+
+function parseConfigLocalDate(iso: string): Date {
+  const parsed = new Date(iso)
   return startOfLocalDay(
     new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate())
   )
+}
+
+export function getLastSwappableDate(config: CycleConfig): Date | null {
+  if (!config.lastSwappableDate) return null
+  return parseConfigLocalDate(config.lastSwappableDate)
 }
 
 export function daysBetween(start: Date, end: Date): number {
@@ -70,8 +79,10 @@ export function getMondayOfWeek(date: Date): Date {
 
 export function getSwappableRange(config: CycleConfig, reference = new Date()) {
   const start = getFirstSwappableDay(reference)
-  const end = addLocalDays(start, config.maxAllowedSwappableDay - 1)
-  return { start, end }
+  const endByMax = addLocalDays(start, config.maxAllowedSwappableDay - 1)
+  const fixedEnd = getLastSwappableDate(config)
+  const end = fixedEnd ?? endByMax
+  return { start, end: start.getTime() <= end.getTime() ? end : start }
 }
 
 export function isDateInSwappableRange(date: Date, config: CycleConfig, reference = new Date()) {
