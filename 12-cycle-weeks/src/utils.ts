@@ -36,8 +36,9 @@ export function addLocalDays(date: Date, days: number): Date {
   return d
 }
 
-export function getTomorrow(reference = new Date()): Date {
-  return addLocalDays(reference, 1)
+/** First swappable day: tomorrow + 1 (two days after today). */
+export function getFirstSwappableDay(reference = new Date()): Date {
+  return addLocalDays(reference, 2)
 }
 
 export function getCycleStartDate(config: CycleConfig): Date {
@@ -68,7 +69,7 @@ export function getMondayOfWeek(date: Date): Date {
 }
 
 export function getSwappableRange(config: CycleConfig, reference = new Date()) {
-  const start = getTomorrow(reference)
+  const start = getFirstSwappableDay(reference)
   const end = addLocalDays(start, config.maxAllowedSwappableDay - 1)
   return { start, end }
 }
