@@ -5,10 +5,14 @@ const MS_PER_DAY = 86_400_000
 
 export type SwapSelectionMap = Record<string, boolean>
 
+/** Maps a date key to its shift code (e.g. "D2") from an imported rotation. */
+export type ShiftLabelMap = Record<string, string>
+
 export type CalendarCell = {
   dateKey: string
   date: Date
   wantsSwap: boolean
+  shiftLabel?: string
 }
 
 export type CalendarWeek = {
@@ -57,6 +61,11 @@ export function getLastSwappableDate(config: CycleConfig): Date | null {
   return parseConfigLocalDate(config.lastSwappableDate)
 }
 
+/** Total days in one cycle, derived from cycleLength (weeks × 7). */
+export function getCycleDayCount(config: CycleConfig): number {
+  return config.cycleLength * 7
+}
+
 export function daysBetween(start: Date, end: Date): number {
   return Math.round((startOfLocalDay(end).getTime() - startOfLocalDay(start).getTime()) / MS_PER_DAY)
 }
@@ -79,9 +88,10 @@ export function getMondayOfWeek(date: Date): Date {
 
 export function getSwappableRange(config: CycleConfig, reference = new Date()) {
   const start = getFirstSwappableDay(reference)
-  const endByMax = addLocalDays(start, config.maxAllowedSwappableDay - 1)
+  // Default span is one full cycle (cycleLength weeks); a fixed lastSwappableDate overrides it.
+  const endByCycle = addLocalDays(start, getCycleDayCount(config) - 1)
   const fixedEnd = getLastSwappableDate(config)
-  const end = fixedEnd ?? endByMax
+  const end = fixedEnd ?? endByCycle
   return { start, end: start.getTime() <= end.getTime() ? end : start }
 }
 
@@ -108,10 +118,28 @@ export function pruneSelections(
   return pruned
 }
 
+export function pruneShiftLabels(
+  labels: ShiftLabelMap,
+  config: CycleConfig = twelveCycleConfig,
+  reference = new Date()
+): ShiftLabelMap {
+  const { start, end } = getSwappableRange(config, reference)
+  const pruned: ShiftLabelMap = {}
+  for (const [dateKey, label] of Object.entries(labels)) {
+    if (!label) continue
+    const date = startOfLocalDay(new Date(`${dateKey}T00:00:00`))
+    if (date.getTime() >= start.getTime() && date.getTime() <= end.getTime()) {
+      pruned[dateKey] = label
+    }
+  }
+  return pruned
+}
+
 export function buildCalendarWeeks(
   selections: SwapSelectionMap,
   config: CycleConfig = twelveCycleConfig,
-  reference = new Date()
+  reference = new Date(),
+  shiftLabels: ShiftLabelMap = {}
 ): CalendarWeek[] {
   const { start, end } = getSwappableRange(config, reference)
   const weeks: CalendarWeek[] = []
@@ -129,10 +157,12 @@ export function buildCalendarWeeks(
       if (date.getTime() < start.getTime() || date.getTime() > end.getTime()) {
         days.push(null)
       } else {
+        const wantsSwap = selections[dateKey] ?? false
         days.push({
           dateKey,
           date,
-          wantsSwap: selections[dateKey] ?? false,
+          wantsSwap,
+          shiftLabel: wantsSwap ? shiftLabels[dateKey] : undefined,
         })
       }
     }

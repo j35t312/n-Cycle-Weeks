@@ -61,7 +61,7 @@ const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick }) => {
                 return <div key={`empty-${weekIndex}-${dayIndex}`} className="swap-calendar__cell swap-calendar__cell--empty" />
               }
 
-              const { dateKey, date, wantsSwap } = cell
+              const { dateKey, date, wantsSwap, shiftLabel } = cell
               const isWeekend = dayIndex >= 5
 
               return (
@@ -76,11 +76,18 @@ const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick }) => {
                     .filter(Boolean)
                     .join(' ')}
                   onClick={() => onCellClick?.(dateKey, wantsSwap)}
-                  title={`${formatCalendarDate(date)} — ${wantsSwap ? 'Wants swap' : 'No swap'}`}
+                  title={`${formatCalendarDate(date)} — ${wantsSwap ? 'Wants swap' : 'No swap'}${shiftLabel ? ` (${shiftLabel})` : ''}`}
                   aria-pressed={wantsSwap}
-                  aria-label={`${DAY_LABELS[dayIndex]}, cycle week ${week.cycleWeekNumber}, ${formatCalendarDate(date)}, ${wantsSwap ? 'wants swap' : 'no swap'}`}
+                  aria-label={`${DAY_LABELS[dayIndex]}, cycle week ${week.cycleWeekNumber}, ${formatCalendarDate(date)}, ${wantsSwap ? 'wants swap' : 'no swap'}${shiftLabel ? `, shift ${shiftLabel}` : ''}`}
                 >
-                  {wantsSwap ? <SwapIcon /> : null}
+                  <span className="swap-calendar__cell-date">{formatCalendarDate(date)}</span>
+                  {wantsSwap ? (
+                    shiftLabel ? (
+                      <span className="swap-calendar__cell-shift">{shiftLabel}</span>
+                    ) : (
+                      <SwapIcon />
+                    )
+                  ) : null}
                 </button>
               )
             })}

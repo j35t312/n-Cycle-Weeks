@@ -58,7 +58,9 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
       },
       devOptions: {
-        enabled: true,
+        // Keep the service worker out of `vite dev`; it intercepts module
+        // requests and can break HMR / serve stale offline responses.
+        enabled: false,
       },
     }),
   ],

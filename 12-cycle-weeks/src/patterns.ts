@@ -3,6 +3,7 @@ import { twelveCycleConfig } from './config'
 import {
   addLocalDays,
   daysBetween,
+  getCycleDayCount,
   getCycleStartDate,
   getSwappableRange,
   startOfLocalDay,
@@ -14,10 +15,6 @@ export type SwapPattern = {
   id: string
   name: string
   slots: number[]
-}
-
-function getCycleDayCount(config: CycleConfig): number {
-  return config.cycleLength * 7
 }
 
 function patternsStorageKey(config: CycleConfig): string {

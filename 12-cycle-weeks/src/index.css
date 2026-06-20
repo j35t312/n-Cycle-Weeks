@@ -258,6 +258,75 @@ code {
   gap: 4px;
 }
 
+/* ── Rotation import ── */
+.rotation-import {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--social-bg);
+}
+
+.rotation-import__title {
+  font-size: 18px;
+  margin: 0;
+}
+
+.rotation-import__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.rotation-import__file-input {
+  display: none;
+}
+
+.rotation-import__filename {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.rotation-import__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.rotation-import__shifts {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rotation-import__checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.rotation-import__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.rotation-import__message {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.rotation-import__message--error {
+  color: #ef4444;
+}
+
 /* ── Pattern toolbar ── */
 .pattern-toolbar {
   display: flex;

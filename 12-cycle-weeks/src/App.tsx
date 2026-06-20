@@ -11,8 +11,11 @@ import {
 } from './patterns'
 import {
   compactStoredSelections,
+  compactStoredShiftLabels,
   loadAndCompactSelections,
+  loadAndCompactShiftLabels,
   persistSelections,
+  persistShiftLabels,
 } from './storage'
 import {
   buildCalendarWeeks,
@@ -20,15 +23,20 @@ import {
   getCycleStartDate,
   getSwappableRange,
   pruneSelections,
+  pruneShiftLabels,
+  type ShiftLabelMap,
   type SwapSelectionMap,
 } from './utils'
 import SwapCalendar from './SwapCalendar'
+import RotationImport from './RotationImport'
 
 const initialSelections = loadAndCompactSelections()
+const initialShiftLabels = loadAndCompactShiftLabels()
 
 function App() {
   const [selections, setSelections] = useState<SwapSelectionMap>(initialSelections)
   const [savedSelections, setSavedSelections] = useState<SwapSelectionMap>(initialSelections)
+  const [shiftLabels, setShiftLabels] = useState<ShiftLabelMap>(initialShiftLabels)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
   const [resetPending, setResetPending] = useState(false)
   const [patterns, setPatterns] = useState<SwapPattern[]>(() => loadPatterns())
@@ -38,8 +46,8 @@ function App() {
   const patternNameInputRef = useRef<HTMLInputElement>(null)
 
   const calendarWeeks = useMemo(
-    () => buildCalendarWeeks(selections, twelveCycleConfig),
-    [selections]
+    () => buildCalendarWeeks(selections, twelveCycleConfig, new Date(), shiftLabels),
+    [selections, shiftLabels]
   )
 
   const { start: swappableStart, end: swappableEnd } = getSwappableRange(twelveCycleConfig)
@@ -75,8 +83,10 @@ function App() {
 
   const syncSelectionCompaction = useCallback(() => {
     compactStoredSelections(twelveCycleConfig)
+    compactStoredShiftLabels(twelveCycleConfig)
     setSelections((prev) => pruneSelections(prev))
     setSavedSelections((prev) => pruneSelections(prev))
+    setShiftLabels((prev) => pruneShiftLabels(prev))
   }, [])
 
   useEffect(() => {
@@ -105,12 +115,26 @@ function App() {
       }
       return next
     })
+    // A manual toggle has no shift code; drop any imported label for this day.
+    setShiftLabels((prev) => {
+      if (!(dateKey in prev)) return prev
+      const next = { ...prev }
+      delete next[dateKey]
+      return next
+    })
+  }
+
+  function handleApplyRotation(nextSelections: SwapSelectionMap, nextLabels: ShiftLabelMap) {
+    setSelections(nextSelections)
+    setShiftLabels(nextLabels)
   }
 
   function handleSave() {
     const pruned = persistSelections(selections)
+    const prunedLabels = persistShiftLabels(shiftLabels)
     setSelections(pruned)
     setSavedSelections(pruned)
+    setShiftLabels(prunedLabels)
     setSaveStatus('saved')
   }
 
@@ -120,8 +144,10 @@ function App() {
       return
     }
     const fresh = persistSelections({})
+    const freshLabels = persistShiftLabels({})
     setSelections(fresh)
     setSavedSelections(fresh)
+    setShiftLabels(freshLabels)
     setSaveStatus('idle')
     setResetPending(false)
   }
@@ -129,6 +155,8 @@ function App() {
   function handleApplyPattern() {
     if (!selectedPattern) return
     setSelections(applyPatternSlots(selectedPattern.slots, twelveCycleConfig))
+    // Patterns carry no shift codes; clear any imported labels.
+    setShiftLabels({})
   }
 
   function handleOpenSavePatternModal() {
@@ -203,6 +231,8 @@ function App() {
           </button>
         </div>
       </header>
+
+      <RotationImport onApply={handleApplyRotation} />
 
       <div className="pattern-toolbar">
         <select
