@@ -9,7 +9,7 @@ export type CycleConfig = {
 export const twelveCycleConfig: CycleConfig = {
   cycleStart: '2026-03-23T00:00:00.000Z',
   cycleLength: 12,
-  lastSwappableDate: '2026-09-10T00:00:00.000Z',
+  lastSwappableDate: '2026-09-11T00:00:00.000Z',
 }
 
 export type RotationImportConfig = {
