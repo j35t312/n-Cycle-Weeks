@@ -6,38 +6,13 @@ import './SwapCalendar.css'
 interface SwapCalendarProps {
   weeks: CalendarWeek[]
   onCellClick?: (dateKey: string, current: boolean) => void
+  /** When false, only existing swaps can be removed; new swaps are locked. */
+  canSwap?: boolean
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-function SwapIcon() {
-  return (
-    <svg
-      className="swap-icon"
-      viewBox="0 0 20 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Wants to swap"
-    >
-      <path
-        d="M4 6h12M13 3l3 3-3 3"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M16 14H4M7 11l-3 3 3 3"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick }) => {
+const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick, canSwap = false }) => {
   return (
     <div className="swap-calendar">
       <div className="swap-calendar__grid">
@@ -63,6 +38,8 @@ const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick }) => {
 
               const { dateKey, date, wantsSwap, shiftLabel } = cell
               const isWeekend = dayIndex >= 5
+              // New swaps require a loaded rotation; existing swaps can always be removed.
+              const interactive = canSwap || wantsSwap
 
               return (
                 <button
@@ -71,22 +48,19 @@ const SwapCalendar: FC<SwapCalendarProps> = ({ weeks, onCellClick }) => {
                     'swap-calendar__cell',
                     wantsSwap ? 'swap-calendar__cell--active' : '',
                     isWeekend ? 'swap-calendar__cell--weekend' : '',
-                    'swap-calendar__cell--clickable',
+                    interactive ? 'swap-calendar__cell--clickable' : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={() => onCellClick?.(dateKey, wantsSwap)}
+                  onClick={interactive ? () => onCellClick?.(dateKey, wantsSwap) : undefined}
+                  disabled={!interactive}
                   title={`${formatCalendarDate(date)} — ${wantsSwap ? 'Wants swap' : 'No swap'}${shiftLabel ? ` (${shiftLabel})` : ''}`}
                   aria-pressed={wantsSwap}
                   aria-label={`${DAY_LABELS[dayIndex]}, cycle week ${week.cycleWeekNumber}, ${formatCalendarDate(date)}, ${wantsSwap ? 'wants swap' : 'no swap'}${shiftLabel ? `, shift ${shiftLabel}` : ''}`}
                 >
                   <span className="swap-calendar__cell-date">{formatCalendarDate(date)}</span>
-                  {wantsSwap ? (
-                    shiftLabel ? (
-                      <span className="swap-calendar__cell-shift">{shiftLabel}</span>
-                    ) : (
-                      <SwapIcon />
-                    )
+                  {wantsSwap && shiftLabel ? (
+                    <span className="swap-calendar__cell-shift">{shiftLabel}</span>
                   ) : null}
                 </button>
               )

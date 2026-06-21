@@ -3,6 +3,7 @@ import {
   addLocalDays,
   getCycleDayCount,
   getSwappableRange,
+  startOfLocalDay,
   toDateKey,
   type ShiftLabelMap,
   type SwapSelectionMap,
@@ -28,6 +29,11 @@ export function getLastDayColumnIndex(
   )
 }
 
+/** Analyst IDs are integers; anything non-integer (e.g. shift codes) is ignored. */
+export function isIntegerId(value: string): boolean {
+  return /^\d+$/.test(value.trim())
+}
+
 export function listAnalystIds(
   sheet: ParsedSheet,
   importConfig: RotationImportConfig
@@ -38,7 +44,7 @@ export function listAnalystIds(
 
   for (let rowIndex = startRow; rowIndex < sheet.rows.length; rowIndex++) {
     const id = getCellValue(sheet.rows, rowIndex, idCol)
-    if (id) ids.add(id)
+    if (id && isIntegerId(id)) ids.add(id.trim())
   }
 
   return [...ids].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
@@ -100,6 +106,23 @@ export function getAnalystCycleDays(
     cycleDays: getCycleDaysFromRow(sheet, match.rowIndex, importConfig, cycleConfig),
     duplicateCount: match.duplicateCount,
   }
+}
+
+/**
+ * Resolves which mappable shift a single calendar day maps to for the loaded
+ * analyst rotation, or null if the day is off/blank/non-mappable. Used to
+ * enforce that manual clicks always carry a concrete shift code.
+ */
+export function resolveShiftForDateKey(
+  cycleDays: readonly string[],
+  dateKey: string,
+  cycleConfig: CycleConfig
+): MappableShift | null {
+  const date = startOfLocalDay(new Date(`${dateKey}T00:00:00`))
+  const offset = getCycleDayOffset(date, cycleConfig)
+  if (offset < 0 || offset >= cycleDays.length) return null
+  const shift = normalizeShift(cycleDays[offset])
+  return isMappableShift(shift) ? (shift as MappableShift) : null
 }
 
 export function analystCycleDaysToSelections(

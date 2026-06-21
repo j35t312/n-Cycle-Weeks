@@ -27,6 +27,7 @@ import {
   type ShiftLabelMap,
   type SwapSelectionMap,
 } from './utils'
+import { resolveShiftForDateKey } from './excel/analystRotation'
 import SwapCalendar from './SwapCalendar'
 import RotationImport from './RotationImport'
 
@@ -37,6 +38,7 @@ function App() {
   const [selections, setSelections] = useState<SwapSelectionMap>(initialSelections)
   const [savedSelections, setSavedSelections] = useState<SwapSelectionMap>(initialSelections)
   const [shiftLabels, setShiftLabels] = useState<ShiftLabelMap>(initialShiftLabels)
+  const [rotationCycleDays, setRotationCycleDays] = useState<string[] | null>(null)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
   const [resetPending, setResetPending] = useState(false)
   const [patterns, setPatterns] = useState<SwapPattern[]>(() => loadPatterns())
@@ -52,6 +54,7 @@ function App() {
 
   const { start: swappableStart, end: swappableEnd } = getSwappableRange(twelveCycleConfig)
   const selectedPattern = patterns.find((pattern) => pattern.id === selectedPatternId)
+  const canSwap = rotationCycleDays !== null
 
   const hasUnsavedChanges = JSON.stringify(selections) !== JSON.stringify(savedSelections)
 
@@ -106,22 +109,28 @@ function App() {
   }, [syncSelectionCompaction])
 
   function handleCellClick(dateKey: string) {
-    setSelections((prev) => {
-      const next = { ...prev }
-      if (next[dateKey]) {
+    // Toggling an existing swap off is always allowed.
+    if (selections[dateKey]) {
+      setSelections((prev) => {
+        const next = { ...prev }
         delete next[dateKey]
-      } else {
-        next[dateKey] = true
-      }
-      return next
-    })
-    // A manual toggle has no shift code; drop any imported label for this day.
-    setShiftLabels((prev) => {
-      if (!(dateKey in prev)) return prev
-      const next = { ...prev }
-      delete next[dateKey]
-      return next
-    })
+        return next
+      })
+      setShiftLabels((prev) => {
+        if (!(dateKey in prev)) return prev
+        const next = { ...prev }
+        delete next[dateKey]
+        return next
+      })
+      return
+    }
+
+    // Adding a swap requires a loaded rotation that maps this day to a shift.
+    if (!rotationCycleDays) return
+    const shift = resolveShiftForDateKey(rotationCycleDays, dateKey, twelveCycleConfig)
+    if (!shift) return
+    setSelections((prev) => ({ ...prev, [dateKey]: true }))
+    setShiftLabels((prev) => ({ ...prev, [dateKey]: shift }))
   }
 
   function handleApplyRotation(nextSelections: SwapSelectionMap, nextLabels: ShiftLabelMap) {
@@ -232,7 +241,7 @@ function App() {
         </div>
       </header>
 
-      <RotationImport onApply={handleApplyRotation} />
+      <RotationImport onApply={handleApplyRotation} onRotationChange={setRotationCycleDays} />
 
       <div className="pattern-toolbar">
         <select
@@ -274,7 +283,13 @@ function App() {
         </button>
       </div>
 
-      <SwapCalendar weeks={calendarWeeks} onCellClick={handleCellClick} />
+      {!canSwap && (
+        <p className="calendar-hint">
+          Load a rotation file and select an Analyst ID to edit swap days.
+        </p>
+      )}
+
+      <SwapCalendar weeks={calendarWeeks} onCellClick={handleCellClick} canSwap={canSwap} />
 
       {savePatternModalOpen && (
         <div className="modal-backdrop" onClick={handleCloseSavePatternModal}>

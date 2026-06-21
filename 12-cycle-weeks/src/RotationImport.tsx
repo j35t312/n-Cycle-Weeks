@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { rotationImportConfig, twelveCycleConfig } from './config'
 import {
   applyAnalystShiftsToCalendar,
+  getAnalystCycleDays,
   listAnalystIds,
 } from './excel/analystRotation'
 import { parseWorkbookFile } from './excel/parseWorkbook'
@@ -10,6 +11,8 @@ import type { ShiftLabelMap, SwapSelectionMap } from './utils'
 
 interface RotationImportProps {
   onApply: (selections: SwapSelectionMap, shiftLabels: ShiftLabelMap) => void
+  /** Emits the selected analyst's per-cycle shift codes (null when none). */
+  onRotationChange: (cycleDays: string[] | null) => void
 }
 
 function createDefaultCheckedShifts(): Record<MappableShift, boolean> {
@@ -23,7 +26,7 @@ function createDefaultCheckedShifts(): Record<MappableShift, boolean> {
   }
 }
 
-function RotationImport({ onApply }: RotationImportProps) {
+function RotationImport({ onApply, onRotationChange }: RotationImportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [sheet, setSheet] = useState<ParsedSheet | null>(null)
   const [fileName, setFileName] = useState('')
@@ -44,6 +47,26 @@ function RotationImport({ onApply }: RotationImportProps) {
     }
     return set
   }, [checkedShifts])
+
+  // Surface the selected analyst's rotation row so the calendar can resolve a
+  // concrete shift code for each manual click (and stay locked otherwise).
+  useEffect(() => {
+    if (!sheet || !selectedAnalystId) {
+      onRotationChange(null)
+      return
+    }
+    try {
+      const { cycleDays } = getAnalystCycleDays(
+        sheet,
+        selectedAnalystId,
+        rotationImportConfig,
+        twelveCycleConfig
+      )
+      onRotationChange(cycleDays)
+    } catch {
+      onRotationChange(null)
+    }
+  }, [sheet, selectedAnalystId, onRotationChange])
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -126,7 +149,7 @@ function RotationImport({ onApply }: RotationImportProps) {
         <>
           <div className="rotation-import__row">
             <label className="rotation-import__label" htmlFor="analyst-id">
-              Analyst ID (column {rotationImportConfig.idColumn})
+              Rotation ID (Column {rotationImportConfig.idColumn})
             </label>
             <select
               id="analyst-id"
