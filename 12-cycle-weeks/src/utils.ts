@@ -88,11 +88,14 @@ export function getMondayOfWeek(date: Date): Date {
 
 export function getSwappableRange(config: CycleConfig, reference = new Date()) {
   const start = getFirstSwappableDay(reference)
-  // Default span is one full cycle (cycleLength weeks); a fixed lastSwappableDate overrides it.
-  const endByCycle = addLocalDays(start, getCycleDayCount(config) - 1)
+  // Dynamic end rolls forward daily: a full cycle (cycleLength weeks) counting
+  // today as day 1, i.e. today + (cycleDayCount - 1). A fixed lastSwappableDate
+  // overrides it. When a fixed end is in the past, end < start and the calendar
+  // renders nothing (expired) instead of clamping to a stray out-of-range day.
+  const dynamicEnd = addLocalDays(startOfLocalDay(reference), getCycleDayCount(config) - 1)
   const fixedEnd = getLastSwappableDate(config)
-  const end = fixedEnd ?? endByCycle
-  return { start, end: start.getTime() <= end.getTime() ? end : start }
+  const end = fixedEnd ?? dynamicEnd
+  return { start, end }
 }
 
 export function isDateInSwappableRange(date: Date, config: CycleConfig, reference = new Date()) {
