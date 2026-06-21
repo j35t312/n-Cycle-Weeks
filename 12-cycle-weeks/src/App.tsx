@@ -163,9 +163,18 @@ function App() {
 
   function handleApplyPattern() {
     if (!selectedPattern) return
-    setSelections(applyPatternSlots(selectedPattern.slots, twelveCycleConfig))
-    // Patterns carry no shift codes; clear any imported labels.
-    setShiftLabels({})
+    const nextSelections = applyPatternSlots(selectedPattern.slots, twelveCycleConfig)
+    setSelections(nextSelections)
+    // Patterns store only cycle slots, so resolve each day's shift code from the
+    // currently loaded rotation.
+    const nextLabels: ShiftLabelMap = {}
+    if (rotationCycleDays) {
+      for (const dateKey of Object.keys(nextSelections)) {
+        const shift = resolveShiftForDateKey(rotationCycleDays, dateKey, twelveCycleConfig)
+        if (shift) nextLabels[dateKey] = shift
+      }
+    }
+    setShiftLabels(nextLabels)
   }
 
   function handleOpenSavePatternModal() {
