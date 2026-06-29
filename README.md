@@ -2,7 +2,7 @@
 
 A modern, responsive Progressive Web App (PWA) built with React 19, Vite, and TypeScript. It features a 12-cycle shift swap scheduling system with reusable patterns and built-in Excel export capabilities (`xlsx`).
 
-Live Demo: [https://www.j35t312.ca/](https://www.j35t312.ca/)
+Live Demo: [https://swap.j35t312.ca/](https://swap.j35t312.ca/)
 
 ---
 
