@@ -146,6 +146,6 @@ This creates the required image sizes mapped inside the manifest file, including
 
 🧑‍💻 Author & Maintenance
 Author: Roel Rivera
-GitHub Repository: j35t312.github.io
+GitHub Repository: n-Cycle_Weeks
 Contact Email: r2psycho@gmail.com
 Copyright: Copyright © 2023-2026 by j35t312
