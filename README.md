@@ -141,3 +141,11 @@ This creates the required image sizes mapped inside the manifest file, including
 * **Base URL:** Set to system root (`/`). Adjust the `base` property in `vite.config.ts` if deploying to a nested sub-path.
 * **Service Worker Caching:** Custom workbox pattern caches all `js`, `css`, `html`, `ico`, `png`, `svg`, and `woff2` assets. 
 * **API Passthrough:** The service worker bypasses routing scopes starting with `/api` via a fallback denylist regex rule.
+
+---
+
+🧑‍💻 Author & Maintenance
+Author: Roel Rivera
+GitHub Repository: j35t312.github.io
+Contact Email: r2psycho@gmail.com
+Copyright: Copyright © 2023-2026 by j35t312
